@@ -13,7 +13,7 @@ Currently, arco is only tested with rmd html files and the [HUGO theme "Learn"](
 documents (currently only supported in section definitions).
 
 * For knitr compiled rmd html files, arco will automatically link in "fig.dir"
-  and page_file folders if they exist in the same directory as the html
+  and "*page*_file" folders if they exist in the same directory as the html
   document.
 
 **Installation**
