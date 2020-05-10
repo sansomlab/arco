@@ -3,7 +3,7 @@ from given sets of html documents (such as those produced from rmarkdown or
 jupytr notebook files).
 
 Arco uses [HUGO](https://gohugo.io/) to build web reports according to
-recipes specified in a yaml files.
+recipes specified in yaml files.
 
 Currently, arco is only tested with rmd html files and the [HUGO theme "Learn"](https://themes.gohugo.io/hugo-theme-learn/).
 
