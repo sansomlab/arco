@@ -1,4 +1,4 @@
-Arco is an **a**utomatic **r**eport **co**mpiler for generatin web reports
+Arco is an **a**utomatic **r**eport **co**mpiler for generating web reports
 from given sets of html documents (such as those produced from rmarkdown or
 jupytr notebook files).
 
