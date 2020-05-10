@@ -1,9 +1,10 @@
-from shutil import copytree
-from pathlib import Path
-
 import os
+import shutil
+from pathlib import Path
 import tarfile
 import textwrap
+import pkg_resources
+import glob
 
 # ########################################################################### #
 # ########################## Functions ###################################### #
@@ -11,8 +12,10 @@ import textwrap
 
 
 def initialise_hugo_website(outdir,
-                            theme_tar_file, theme_layout_modifications,
-                            config, config_template):
+                            theme_tar_file,
+                            theme_modifications,
+                            config,
+                            config_template):
     '''create and configure a new hugo website'''
 
     # initiate the site
@@ -32,18 +35,32 @@ def initialise_hugo_website(outdir,
     os.system('echo theme = \\"' + theme_name + '\\" >>' +
               os.path.join(outdir, "config.toml"))
 
-    # copy over theme modifications
-    mod_dirs = ["layouts", "static"]
+    if theme_modifications is not None:
 
-    for mod_dir in mod_dirs:
+        # copy over theme modifications
+        mod_dirs = next(os.walk(theme_modifications))[1]
 
-        target_dir = os.path.join(outdir, mod_dir)
+        for mod_dir in mod_dirs:
 
-        os.rmdir(target_dir)
+            target_dir = os.path.join(outdir, mod_dir)
 
-        # add the custom layout files
-        copytree(os.path.join(theme_layout_modifications, mod_dir),
-                 target_dir)
+            os.rmdir(target_dir)
+
+            # add the custom layout files
+            shutil.copytree(os.path.join(theme_modifications, mod_dir),
+                            target_dir)
+
+    # add the shortcodes
+    shortcode_dir = os.path.join(outdir, "layouts", "shortcodes")
+
+    if not os.path.exists(shortcode_dir):
+        os.mkdir(shortcode_dir)
+
+    pkg_shortcode_path = pkg_resources.resource_filename('arco', 'shortcodes')
+
+    for shortcode_file in glob.glob(os.path.join(
+            pkg_shortcode_path, "*.html")):
+        shutil.copy(shortcode_file, shortcode_dir)
 
     # write the config.toml file
     config["theme_name"] = theme_name
@@ -78,7 +95,7 @@ def make_section(_section, index_template, outdir):
 def make_section_pages(_section, page_template, outdir):
     '''make a section (content subfolder) pages of hugo website'''
 
-    page_weight = 0
+    page_weight = 1
 
     for page_name, page_file in _section["pages"].items():
 

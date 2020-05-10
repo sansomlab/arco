@@ -42,9 +42,9 @@ def main():
                         help="the outdir for the report"),
     parser.add_argument("-t", "--theme", dest="theme",
                         help="gzipped file containing the hugo theme")
-    parser.add_argument("-l", "--layoutmods", dest="layoutmods",
-                        help="directory containing the hugo theme layout"
-                        "modifications"),
+    parser.add_argument("-m", "--modifications", dest="modifications",
+                        default=None,
+                        help="directory containing theme modifications"),
     parser.add_argument("--overwrite", dest="overwrite", action="store_true",
                         help="if set, an existant outdir will be deleted")
 
@@ -72,7 +72,7 @@ def main():
 
     # create and configure a new HUGO site
     initialise_hugo_website(outdir,
-                            args.theme, args.layoutmods,
+                            args.theme, args.modifications,
                             recipe, templates.config)
 
     # ####################################################################### #
@@ -82,6 +82,7 @@ def main():
     # write the top level _index.md
     page_vars = {"title": recipe["report"]["title"],
                  "contents": recipe["report"]["contents"],
+                 "weight": 1,
                  }
 
     write_file(os.path.join(outdir, "content", "_index.md"),
@@ -89,13 +90,13 @@ def main():
 
     # write the sections and section pages
 
-    section_weight = 0
+    section_weight = 1
 
     for section, pages in recipe["report"]["sections"].items():
 
         _section = recipe["report"]["sections"][section]
 
-        _section["weight"] = 1
+        _section["weight"] = section_weight
 
         section_folder = _section["source_folder"]
 
@@ -106,6 +107,8 @@ def main():
             folders = glob.glob(section_folder)
             _folder_section = _section.copy()
 
+            folder_section_weight = 1
+
             for folder in folders:
 
                 prefix = folder.replace(section_folder[1:], "")
@@ -115,18 +118,18 @@ def main():
                     _section["target_folder"], prefix)
                 _folder_section["title"] = prefix
                 _folder_section["contents"] = ""
-                _folder_section["weight"] = section_weight
+                _folder_section["weight"] = folder_section_weight
 
                 make_section(_folder_section, templates.index, outdir)
                 make_section_pages(_folder_section, templates.page, outdir)
 
-                section_weight += 1
+                folder_section_weight += 1
         else:
-            _section["weight"] = section_weight
+            _section["weight"] = 1
 
             make_section_pages(_section, templates.page, outdir)
 
-            section_weight += 1
+        section_weight += 1
 
 
 if __name__ == "__main__":

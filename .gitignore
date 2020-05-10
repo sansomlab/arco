@@ -1,5 +1,9 @@
 # ignore python compilation files
 *.py[cod]
+arco.egg-info/
+build/
+
+
 
 # ignore temporary files from emacs/vim
 *~

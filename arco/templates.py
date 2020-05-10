@@ -21,6 +21,7 @@ config = '''\
 index = '''\
             +++
             title = "%(title)s"
+            weight = %(weight)s
             +++
             %(contents)s
             {{%% children %%}}
@@ -29,7 +30,7 @@ index = '''\
 page = '''\
            +++
            title = "%(title)s"
-           weight = "%(weight)s"
+           weight = %(weight)s
            +++
            {{%% include_html_in_iframe file="%(html_file_path)s" %%}}
         '''
