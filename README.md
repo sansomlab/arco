@@ -1,13 +1,13 @@
-Arco is a tool for automatically compiling web reports from given sets
-of html documents (such as those produced from rmarkdown or jupytr
-notebook files).
+Arco is an **a**utomatic **r**eport **co**mpiler for generatin web reports
+from given sets of html documents (such as those produced from rmarkdown or
+jupytr notebook files).
 
 Arco uses [HUGO](https://gohugo.io/) to build web reports according to
 recipes specified in a yaml files.
 
 Currently, arco is only tested with rmd html files and the [HUGO theme "Learn"](https://themes.gohugo.io/hugo-theme-learn/).
 
-**Features:**
+**Features**
 
 * Arco recipies can include globs to match arbitrary sets of prexisting
 documents (currently only supported in section definitions).
@@ -21,5 +21,6 @@ documents (currently only supported in section definitions).
 To use arco clone this repository and install with pip:
 
 ```
+git clone git@github.com:sansomlab/arco.git
 pip install arco
 ```
