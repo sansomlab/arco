@@ -5,6 +5,10 @@ import tarfile
 import textwrap
 import pkg_resources
 import glob
+import copy
+import logging
+
+import arco.templates as templates
 
 # ########################################################################### #
 # ########################## Functions ###################################### #
@@ -78,68 +82,260 @@ def write_file(file_name, template, vars_dict):
         fh.write(textwrap.dedent(contents))
 
 
-def make_section(_section, index_template, outdir):
+def make_section(section_definition, index_template, outdir):
     '''make a section (content subfolder) of hugo website'''
 
-    os.mkdir(os.path.join(outdir, "content", _section["target_folder"]))
+    sec_def = section_definition
 
-    page_vars = {"title": os.path.basename(_section["target_folder"]),
-                 "contents": _section["contents"],
-                 "weight": _section["weight"]}
+    target_dir =os.path.join(outdir, sec_def["target"])
+    if not os.path.exists(target_dir):
+        os.mkdir(target_dir)
 
-    write_file(os.path.join(outdir, "content",
-                            _section["target_folder"], "_index.md"),
-               index_template, page_vars)
+    page_vars = {"title": os.path.basename(sec_def["target"]),
+                 "contents": sec_def["contents"],
+                 "weight": sec_def["weight"]}
+
+    page_file = os.path.join(outdir,
+                            sec_def["target"],
+                             "_index.md")
+
+    if not os.path.exists(page_file):
+
+        write_file(page_file,
+                   index_template, page_vars)
+
+    else:
+        raise ValueError("Page file already exists")
 
 
-def make_section_pages(_section, page_template, outdir):
+def make_pages(section_definition,
+               indir,
+               page_template,
+               target_folder):
     '''make a section (content subfolder) pages of hugo website'''
+
+    sec_def = section_definition
 
     page_weight = 1
 
-    for page_name, page_file in _section["pages"].items():
+    for page_name, page_file in sec_def["pages"].items():
 
-        page_path = os.path.join(_section["source_folder"], page_file)
+        ## support globbing for pages... (untested!)
 
-        source_path_dir = os.path.dirname(page_path)
+        page_source_path = os.path.join(indir, sec_def["source"])
 
-        target_folder = os.path.join(outdir, "content",
-                                     _section["target_folder"])
 
-        target_path = os.path.join(target_folder, page_file)
 
-        # check that the parent directory exists.
-        target_path_dir = os.path.dirname(target_path)
+        if page_file.startswith("*."):
 
-        if not os.path.exists(target_path_dir):
-            os.mkdir(target_path_dir)
+            glob_path = os.path.join(page_source_path, page_file)
 
-        os.symlink(os.path.abspath(page_path),
-                   target_path)
+            globbed_pages = glob.glob(glob_path)
 
-        fig_dir = os.path.join(source_path_dir, "fig.dir")
+            globbing = True
 
-        if os.path.exists(fig_dir):
-            os.symlink(os.path.abspath(fig_dir),
-                       os.path.join(target_path_dir, "fig.dir"))
+            source_path_len = len(Path(page_source_path).parts)
 
-        # link in associated files (i.e. javascript libraries)
-        page_files = page_path.replace(".html", "_files")
+            pages = [ os.path.join(Path(x).parts[source_path_len:])
+                      for x in globbed_paths ]
 
-        if os.path.exists(page_files):
-            os.symlink(os.path.abspath(page_files),
-                       os.path.join(target_folder,
-                                    page_file.replace(".html", "_files")))
+        else:
+            pages = [ page_file ]
 
-        markdown_file = os.path.join(target_folder,
-                                     page_file.replace(".html", "_x.md"))
+        for page in pages:
 
-        page_basename = os.path.basename(page_file)
+            logging.info("Processing page: " + page)
 
-        page_vars = {"title": page_name,
-                     "html_file_path": page_basename,
-                     "weight": page_weight}
+            target_path = os.path.join(target_folder,
+                                       page)
 
-        write_file(markdown_file, page_template, page_vars)
+            # check that the parent directory exists.
+            target_path_dir = os.path.dirname(target_path)
 
-        page_weight += 1
+            if not os.path.exists(target_path_dir):
+                os.mkdir(target_path_dir)
+
+            page_abspath = os.path.abspath(
+                os.path.join(page_source_path, page))
+
+            if not os.path.exists(page_abspath):
+
+                logging.warn(
+                    "source page does not exist: " +\
+                    page_abspath)
+
+                continue
+
+            os.symlink(page_abspath,
+                           target_path)
+
+            # Support for RMD files.
+
+            # link in "fig.dir" if it exists.
+            source_fig_dir = os.path.join(os.path.dirname(page_abspath),
+                                          "fig.dir")
+
+            target_fig_dir = os.path.join(target_path_dir, "fig.dir")
+
+            if os.path.exists(source_fig_dir):
+
+                if not os.path.exists(target_fig_dir):
+                    os.symlink(os.path.abspath(source_fig_dir),
+                           target_fig_dir)
+                else:
+                    logging.warn("not linking in fig dir "
+                                  "because a link already exists")
+
+
+            # link in associated files (i.e. javascript libraries)
+            page_files = page_abspath.replace(".html", "_files")
+
+            if os.path.exists(page_files):
+                os.symlink(os.path.abspath(page_files),
+                           os.path.join(target_folder,
+                                        page.replace(".html", "_files")))
+
+            page_basename = os.path.basename(page)
+            markdown_file = os.path.join(target_folder,
+                                         page_basename.replace(".html", "_x.md"))
+
+            page_vars = {"title": page_name,
+                         "html_file_path": page,
+                         "weight": page_weight}
+
+            write_file(markdown_file, page_template, page_vars)
+
+            page_weight += 1
+
+
+def parse_section(section, indir, outdir):
+
+    logging.info("Parsing report section: " +\
+                 section["def"]["id"])
+
+
+    # Check the section is defined
+    if "def" not in section.keys():
+        raise ValueError("Section definition missing")
+
+    # Check the source folder is defined
+    if "source" not in section["def"].keys():
+        raise ValueError("Section source not defined")
+
+    source = section["def"]["source"]
+
+    # establish the full relative path to
+    # the source files
+    if indir == ".":
+        source_path = source
+    else:
+        if source == ".":
+            source_path = indir
+        else:
+            source_path = os.path.join(indir, source)
+
+    if os.path.basename(source).startswith("*"):
+
+        folders = [x for x in glob.glob(source_path)]
+        globbing = True
+
+    else:
+        folders = [ source_path ]
+        globbing = False
+
+    if "target" not in section["def"].keys():
+        raise ValueError("Section target folder not defined")
+
+    else:
+        target = section["def"]["target"]
+
+
+    if not globbing:
+
+        if "title" not in section["def"].keys():
+            raise ValueError("Section title not defined")
+
+        title = section["def"]["title"]
+
+        if "content" in section["def"].keys():
+            contents = section["def"]["contents"]
+
+        else:
+            contents = ""
+
+
+    glob_weight = 1
+
+    if len(folders) == 0:
+        return
+
+    for source_folder in folders:
+
+        source_folder_name = os.path.basename(source_folder)
+
+        _section = copy.deepcopy(section)
+        _section["def"]["source"] = source_folder_name
+
+        if globbing:
+            prefix = source_folder_name.replace(source[1:], "")
+
+            if _section["def"]["target"] == ".":
+                _section["def"]["target"] = prefix
+
+            else:
+                _section["def"]["target"] = os.path.join(
+                    target, prefix)
+
+            _section["def"]["title"] = prefix
+
+            _section["def"]["contents"] = ""
+
+            _section["def"]["weight"] = glob_weight
+            glob_weight += 1
+
+        else:
+            _section["def"]["target"] = target
+
+        make_section(_section["def"], templates.index, outdir)
+
+        if "pages" in _section["def"]:
+
+            if _section["def"]["pages"] and _section["def"]["pages"] != "None":
+
+                if _section["def"]["target"] == ".":
+                    target_folder = outdir
+                else:
+                    target_folder = os.path.join(outdir,
+                                                 _section["def"]["target"])
+
+                make_pages(_section["def"],
+                           indir,
+                           templates.page,
+                           target_folder)
+
+
+        # make child sections
+        items = section.keys()
+
+        child_sections = [x for x in items if x != "def"]
+
+        child_weight = 1
+
+        for child in child_sections:
+
+            _child_section = copy.deepcopy(section[child])
+
+            _child_section["def"]["id"] = child
+            _child_section["def"]["weight"] = child_weight
+            child_weight += 1
+
+            _indir = source_folder
+
+            if _section["def"]["target"] != ".":
+                 _outdir = os.path.join(outdir,
+                                        _section["def"]["target"])
+            else:
+                 _outdir = outdir
+
+            parse_section(_child_section,
+                          _indir, _outdir)
