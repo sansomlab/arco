@@ -25,12 +25,16 @@ import yaml
 import os
 import shutil
 import glob
+import logging
+import sys
 
 import arco.templates as templates
 from arco.functions import *
 
 
 def main():
+
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 
@@ -70,6 +74,8 @@ def main():
     else:
         os.mkdir(outdir)
 
+    logging.info("Initialising HUGO site")
+
     # create and configure a new HUGO site
     initialise_hugo_website(outdir,
                             args.theme, args.modifications,
@@ -80,8 +86,8 @@ def main():
     # ####################################################################### #
 
     # write the top level _index.md
-    page_vars = {"title": recipe["report"]["title"],
-                 "contents": recipe["report"]["contents"],
+    page_vars = {"title": recipe["report"]["def"]["title"],
+                 "contents": recipe["report"]["def"]["contents"],
                  "weight": 1,
                  }
 
@@ -89,47 +95,24 @@ def main():
                templates.index, page_vars)
 
     # write the sections and section pages
+    logging.info("Linking in the contents")
 
     section_weight = 1
 
-    for section, pages in recipe["report"]["sections"].items():
+    sections = [x for x in recipe["report"].keys() if x != "def"]
 
-        _section = recipe["report"]["sections"][section]
+    for section in sections:
 
-        _section["weight"] = section_weight
+        _section = recipe["report"][section]
+        _section["def"]["weight"] = section_weight
+        _section["def"]["id"] = section
 
-        section_folder = _section["source_folder"]
-
-        make_section(_section, templates.index, outdir)
-
-        if section_folder.startswith("*"):
-
-            folders = glob.glob(section_folder)
-            _folder_section = _section.copy()
-
-            folder_section_weight = 1
-
-            for folder in folders:
-
-                prefix = folder.replace(section_folder[1:], "")
-
-                _folder_section["source_folder"] = folder
-                _folder_section["target_folder"] = os.path.join(
-                    _section["target_folder"], prefix)
-                _folder_section["title"] = prefix
-                _folder_section["contents"] = ""
-                _folder_section["weight"] = folder_section_weight
-
-                make_section(_folder_section, templates.index, outdir)
-                make_section_pages(_folder_section, templates.page, outdir)
-
-                folder_section_weight += 1
-        else:
-            _section["weight"] = 1
-
-            make_section_pages(_section, templates.page, outdir)
+        # Recursively parse the section.
+        parse_section(_section, args.indir,
+                      os.path.join(outdir,"content"))
 
         section_weight += 1
+
 
 
 if __name__ == "__main__":
