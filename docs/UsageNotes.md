@@ -59,7 +59,9 @@ report:
 
 **Notes**
 
-* Each section must include a “def” key that is a dictionary which defines its source, target, title, contents (and pages).
+* Each section definition in the yaml must include a “def” key comprising of a dictionary defining its source, target, title, contents (and pages).
+
+* title is ignored if globbing.
 
 * Any key not called “def” is treated as a subsection.
 
