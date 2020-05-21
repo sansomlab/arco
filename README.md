@@ -9,8 +9,10 @@ Currently, arco is only tested with rmd html files and the [HUGO theme "Learn"](
 
 **Features**
 
-* Arco recipies can include globs to match arbitrary sets of prexisting
-documents (currently only supported in section definitions).
+* Arco yaml recipies can include globs to match arbitrary sets of prexisting
+pages and documents.
+
+* Arbitrary levels of subsections are supported.
 
 * For knitr compiled rmd html files, arco will automatically link in "fig.dir"
   and "*page*_file" folders if they exist in the same directory as the html
