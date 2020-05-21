@@ -140,6 +140,7 @@ def make_pages(section_definition,
                       for x in globbed_paths ]
 
         else:
+            globbing = False
             pages = [ page_file ]
 
         for page in pages:
@@ -195,7 +196,12 @@ def make_pages(section_definition,
                            os.path.join(target_folder,
                                         page.replace(".html", "_files")))
 
-            page_basename = os.path.basename(page)
+            if globbing:
+                page_basename = os.path.basename(page)
+
+            else:
+                page_basename = page_name + ".html"
+
             markdown_file = os.path.join(target_folder,
                                          page_basename.replace(".html", "_x.md"))
 
@@ -207,6 +213,7 @@ def make_pages(section_definition,
 
             page_weight += 1
 
+    return page_weight
 
 def parse_section(section, indir, outdir):
 
@@ -308,18 +315,22 @@ def parse_section(section, indir, outdir):
                     target_folder = os.path.join(outdir,
                                                  _section["def"]["target"])
 
-                make_pages(_section["def"],
-                           indir,
-                           templates.page,
-                           target_folder)
+                child_weight = make_pages(_section["def"],
+                                          indir,
+                                          templates.page,
+                                          target_folder)
 
+            else:
+                child_weight = 1
+
+        else:
+            child_weight = 1
 
         # make child sections
         items = section.keys()
 
         child_sections = [x for x in items if x != "def"]
 
-        child_weight = 1
 
         for child in child_sections:
 
