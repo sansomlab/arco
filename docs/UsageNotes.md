@@ -1,4 +1,4 @@
-** Toy example **
+**Toy example**
 
 To build a report for the following files:
 
