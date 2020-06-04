@@ -1,6 +1,6 @@
 Arco is an **a**utomatic **r**eport **co**mpiler for generating web reports
 from given sets of html documents (such as those produced from rmarkdown or
-jupytr notebook files).
+jupyter notebook files).
 
 Arco uses [HUGO](https://gohugo.io/) to build web reports according to
 recipes specified in yaml files.
