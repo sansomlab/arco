@@ -56,6 +56,24 @@ report:
 
 ```
 
+And arco run as follows:
+
+```
+arco --theme arco/themes/hugo-theme-learn-2.4.0.tar.gz            # the hugo theme to use
+     --modifications archo/themes/hugo-theme-learn-modifications  # modifications to the theme
+     --recipe=report.yml                                          # the yaml recipe defining the report
+     --indir=.                                                    # the directory containing the input files
+     --outdir=report.dir                                          # the directory for the output
+     --overwrite                                                  # if set an existing outdirectory will be overwritten
+```
+
+When the report has been built, it can be viewed using hugo
+
+```
+hugo serve -p 1313           # -p is the port on which the report will be served
+           -s report.dir     # -s is the source folder containing the hugo report
+```
+
 
 **Notes**
 
